@@ -138,6 +138,37 @@ func (s *server) DeleteBlog(ctx context.Context, req *pb.DeleteBlogRequest) (*pb
 	return &pb.DeleteBlogResponse{BlogId: req.GetBlogId()}, nil
 }
 
+func (s *server) ListBlog(req *pb.ListBlogRequest, stream pb.BlogService_ListBlogServer) error {
+	fmt.Println("ListBlog called")
+	cursor, err := collection.Find(context.Background(), bson.D{{}})
+	if err != nil {
+		return status.Errorf(codes.Internal, fmt.Sprintf("Unknon error: %v\n", err))
+	}
+
+	defer func() {
+		err := cursor.Close(context.Background())
+		if err != nil {
+			log.Fatalf("Unable to close cursor: %v\n", err)
+		}
+	}()
+
+	for cursor.Next(context.Background()) {
+		data := &blogItem{}
+		err := cursor.Decode(data)
+
+		fmt.Println(data)
+
+		if err != nil {
+			return status.Errorf(codes.Internal, fmt.Sprintf("Error while decoding: %v\n", err))
+		}
+		sendErr := stream.Send(&pb.ListBlogResponse{Blog: dataToBlog(data)})
+		if sendErr != nil {
+			return status.Errorf(codes.Internal, fmt.Sprintf("Unknown error: %v\n", err))
+		}
+	}
+	return nil
+}
+
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 

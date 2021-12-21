@@ -6,6 +6,7 @@ import (
 	"github.com/mdShakilHossainNsu2018/grpc-go-course/blog/blogpb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"io"
 	"log"
 )
 
@@ -84,4 +85,26 @@ func main() {
 
 	fmt.Printf("Delete Res: %v\n", deleteRes)
 
+	// List blog
+
+	stream, listBlogErr := c.ListBlog(context.Background(), &blogpb.ListBlogRequest{})
+
+	if listBlogErr != nil {
+		log.Fatalf("Error in List blog: %v\n", listBlogErr)
+	}
+
+	for true {
+		res, err := stream.Recv()
+
+		if err == io.EOF {
+			fmt.Println("No more file")
+			break
+		}
+
+		if err != nil {
+			log.Fatalf("Error in list: %v\n", err)
+		}
+
+		fmt.Println(res.GetBlog())
+	}
 }
